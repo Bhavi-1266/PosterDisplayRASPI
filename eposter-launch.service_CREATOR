@@ -1,0 +1,18 @@
+sudo tee /etc/systemd/system/eposter-launch.service > /dev/null <<'UNIT'
+[Unit]
+Description=Poster ePoster Launcher (runs launcher.sh)
+After=network.target
+
+[Service]
+Type=simple
+User=bhavy
+Environment=SDL_VIDEODRIVER=fbcon
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=/home/bhavy/eposter
+ExecStart=/bin/bash /home/bhavy/eposter/launcher.sh
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+UNIT
