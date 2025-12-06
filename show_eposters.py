@@ -8,9 +8,6 @@ show_eposters.py
 - Keeps cache directory ($HOME/eposter_cache) exactly synchronized with current API image list.
 - Shows images fullscreen in portrait orientation (whole image visible).
 - Exit cleanly with ESC or 'q'.
-
-Usage example:
-POSTER_TOKEN="..." CACHE_REFRESH=60 DISPLAY_TIME=5 python3 show_eposters.py
 """
 from pathlib import Path
 import os
@@ -76,7 +73,8 @@ def expected_filenames_from_urls(urls):
 def sync_cache(expected_urls):
     """
     Ensure cache contains exactly the files named by expected_urls.
-    Returns list of Path objects for files that are now in cache (downloaded or already present).
+    Returns list of Path objects for files that are now in cache (downloaded or already present),
+    in the same order as expected_urls.
     """
     ensure_cache()
     expected_names = expected_filenames_from_urls(expected_urls)
@@ -94,7 +92,7 @@ def sync_cache(expected_urls):
             except Exception as e:
                 print("[sync_cache] failed delete:", f.name, e)
 
-    # Download missing files
+    # Download missing files and collect paths in the same order as expected_urls
     cached_paths = []
     for url in expected_urls:
         if not url:
@@ -106,28 +104,27 @@ def sync_cache(expected_urls):
         if dest.exists():
             cached_paths.append(dest)
             continue
-        # download to tmp then rename
+        # download to tmp then rename (avoid 'with requests.get' misuse)
+        tmp = None
         try:
-            with requests.get(url, stream=True, timeout=REQUEST_TIMEOUT) as r:
-                r.raise_for_status()
-                tmp = dest.with_suffix(".tmp")
-                with open(tmp, "wb") as fh:
-                    for chunk in r.iter_content(8192):
-                        if chunk:
-                            fh.write(chunk)
-                tmp.rename(dest)
-                print("[sync_cache] downloaded:", fname)
-                cached_paths.append(dest)
+            r = requests.get(url, stream=True, timeout=REQUEST_TIMEOUT)
+            r.raise_for_status()
+            tmp = dest.with_suffix(".tmp")
+            with open(tmp, "wb") as fh:
+                for chunk in r.iter_content(8192):
+                    if chunk:
+                        fh.write(chunk)
+            tmp.rename(dest)
+            print("[sync_cache] downloaded:", fname)
+            cached_paths.append(dest)
         except Exception as e:
             print("[sync_cache] download failed for", url, "->", e)
             # try to remove tmp if exists
             try:
-                if tmp.exists():
+                if tmp and tmp.exists():
                     tmp.unlink()
             except Exception:
                 pass
-    # sort stable
-    cached_paths = sorted(cached_paths, key=lambda p: p.name)
     return cached_paths
 
 def make_portrait_and_fit(img: Image.Image, target_w: int, target_h: int) -> Image.Image:
@@ -181,22 +178,27 @@ def main():
             now = time.time()
             if now - last_sync >= CACHE_REFRESH:
                 posters = fetch_posters(POSTER_TOKEN)
+
                 if posters is None:
                     print("[main] API fetch error; will retry later.")
                 else:
-                    # extract poster urls in stable order
+                    # Sort posters newest → oldest using id
+                    posters = sorted(posters, key=lambda x: x.get("id", 0), reverse=True)
+
+                    # Extract URLs in sorted order
                     urls = []
                     for entry in posters:
-                        # entry shape: must contain 'eposter_file' per sample
                         url = entry.get("eposter_file") or entry.get("file") or None
                         if url:
                             urls.append(url)
-                    # Sync cache to exactly these URLs (delete extras, download missing)
+
+                    # Sync cache (only these files stay)
                     image_paths = sync_cache(urls)
+
                     if not image_paths:
                         print("[main] No poster images found in API.")
                     else:
-                        print(f"[main] Cached {len(image_paths)} images.")
+                        print(f"[main] Cached {len(image_paths)} images (newest → oldest).")
                 last_sync = now
 
             if not image_paths:
@@ -255,3 +257,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
