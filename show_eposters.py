@@ -115,6 +115,22 @@ else:
 def ensure_cache():
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
+def ensure_api_json():
+    """
+    Creates the API JSON file with empty structure if it doesn't exist.
+    """
+    try:
+        if not API_DATA_JSON.exists():
+            # Create parent directory if it doesn't exist
+            API_DATA_JSON.parent.mkdir(parents=True, exist_ok=True)
+            # Create empty JSON structure
+            empty_data = {}
+            with open(API_DATA_JSON, 'w', encoding='utf-8') as f:
+                json.dump(empty_data, f, indent=2, ensure_ascii=False)
+            print(f"[ensure_api_json] Created empty API data file: {API_DATA_JSON}")
+    except Exception as e:
+        print(f"[ensure_api_json] Failed to create API data file: {e}")
+
 def fetch_posters(token):
     """
     Returns a list of poster dicts (as returned by API) or None on failure.
@@ -270,6 +286,7 @@ def main():
         sys.exit(1)
 
     ensure_cache()
+    ensure_api_json()  # Create API JSON file if it doesn't exist
 
     pygame.init()
     pygame.display.init()
