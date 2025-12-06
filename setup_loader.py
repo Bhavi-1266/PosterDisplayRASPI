@@ -1,112 +1,86 @@
 #!/usr/bin/env python3
 """
 setup_loader.py
-Shows a fullscreen loading UI while installing ONLY:
-  - python3-pygame
-  - python3-pil
-
-On success: exits with code 0.
-On failure: shows ERROR screen and waits for a keypress (then exits nonzero).
-Run from a terminal (so sudo can prompt).
+Shows fullscreen loader and installs:
+    - python3-pygame
+    - python3-pil
 """
-import os
-import sys
-import time
-import subprocess
+
+import os, sys, time, subprocess
 from pathlib import Path
 
-# Try import pygame for UI; if missing and user can't install, we fallback to textual output.
 try:
     import pygame
 except Exception:
     pygame = None
 
 REQUIRED_APT_PKGS = ["python3-pygame", "python3-pil"]
-BG = (10,10,10)
-WHITE = (240,240,240)
-RED = (220,80,80)
-YELLOW = (240,200,60)
+BG=(10,10,10); WHITE=(240,240,240); RED=(220,80,80); YELLOW=(240,200,60)
+
+BASE = Path("/home/eposter")
 
 def run_cmd(cmd):
     try:
-        proc = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False)
-        return proc.returncode, proc.stdout
+        p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        return p.returncode, p.stdout
     except Exception as e:
         return 1, str(e)
 
-def apt_install(pkgs):
-    """Install apt packages; uses sudo if not root."""
+def apt_install():
     if os.geteuid() != 0:
-        rc, out = run_cmd(["sudo", "apt", "update", "-y"])
-        if rc != 0:
-            return False, f"apt update failed: {out.splitlines()[-1][:200]}"
-        rc, out = run_cmd(["sudo", "apt", "install", "-y"] + pkgs)
-        if rc != 0:
-            return False, f"apt install failed: {out.splitlines()[-1][:200]}"
-        return True, "installed"
+        cmds = [["sudo","apt","update","-y"], ["sudo","apt","install","-y"]+REQUIRED_APT_PKGS]
     else:
-        rc, out = run_cmd(["apt", "update", "-y"])
-        if rc != 0:
-            return False, f"apt update failed: {out.splitlines()[-1][:200]}"
-        rc, out = run_cmd(["apt", "install", "-y"] + pkgs)
-        if rc != 0:
-            return False, f"apt install failed: {out.splitlines()[-1][:200]}"
-        return True, "installed"
+        cmds = [["apt","update","-y"], ["apt","install","-y"]+REQUIRED_APT_PKGS]
+    for c in cmds:
+        rc,out = run_cmd(c)
+        if rc!=0:
+            return False, out[-200:]
+    return True, "installed"
 
-def show_text(screen, lines, font, color=WHITE):
+def show(screen, lines, font, color):
     screen.fill(BG)
     w,h = screen.get_size()
-    total = sum(font.size(line)[1] + 8 for line in lines)
-    y = (h - total) // 2
+    y=(h - sum(font.size(x)[1]+10 for x in lines))//2
     for line in lines:
         surf = font.render(line, True, color)
-        screen.blit(surf, ((w - surf.get_width())//2, y))
-        y += surf.get_height() + 8
+        screen.blit(surf, ((w-surf.get_width())//2, y))
+        y+=surf.get_height()+10
     pygame.display.flip()
 
-def run_ui_install():
-    """Runs apt install with a pygame UI. Returns (ok, message)."""
+def do_ui_setup():
     if pygame is None:
-        # No pygame available — run apt headless (user will see terminal output)
-        return apt_install(REQUIRED_APT_PKGS)
+        return apt_install()
 
     pygame.init()
-    pygame.display.init()
-    info = pygame.display.Info()
-    screen = pygame.display.set_mode((info.current_w, info.current_h), pygame.FULLSCREEN)
+    scr = pygame.display.set_mode((0,0), pygame.FULLSCREEN)
     pygame.mouse.set_visible(False)
-    font = pygame.font.SysFont("Arial", 44)
-    small = pygame.font.SysFont("Arial", 28)
+    font = pygame.font.SysFont("Arial",48)
 
-    show_text(screen, ["Preparing setup...", "", "Installing system packages..."], font, color=YELLOW)
+    show(scr, ["Preparing setup…","Installing system packages…"], font, YELLOW)
     pygame.event.pump()
-    time.sleep(0.4)
+    time.sleep(0.5)
 
-    ok, msg = apt_install(REQUIRED_APT_PKGS)
+    ok,msg = apt_install()
     if not ok:
-        show_text(screen, ["ERROR LOADING", "", msg[:200]], font, color=RED)
-        # keep the error screen until user presses a key
-        waiting = True
-        while waiting:
-            for ev in pygame.event.get():
-                if ev.type == pygame.KEYDOWN or ev.type == pygame.QUIT:
-                    waiting = False
+        show(scr, ["ERROR LOADING","",msg], font, RED)
+        while True:
+            for e in pygame.event.get():
+                if e.type==pygame.KEYDOWN: pygame.quit(); return False,msg
             time.sleep(0.1)
-        pygame.quit()
-        return False, msg
-    else:
-        show_text(screen, ["Setup complete.", "", "You may now run the launcher."], font, color=WHITE)
-        time.sleep(1.0)
-        pygame.quit()
-        return True, "installed"
+
+    show(scr, ["Setup complete.","You may run launcher now."], font, WHITE)
+    time.sleep(1)
+    pygame.quit()
+    return True, "installed"
 
 def main():
-    ok, msg = run_ui_install()
+    ok,msg = do_ui_setup()
     if not ok:
         print("Setup failed:", msg)
-        return 2
-    print("Setup succeeded:", msg)
+        return 1
+    print("Setup OK")
     return 0
 
 if __name__ == "__main__":
     sys.exit(main())
+
