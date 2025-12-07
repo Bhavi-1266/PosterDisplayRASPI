@@ -1,30 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Debug timestamp
-echo "[launcher] Cron/Autostart started at $(date)" >> /home/bhavy/eposter/launcher.log
-
-# Wait a bit for the desktop/session to initialise (adjust if needed)
-sleep 6
-
-# Ensure full absolute python path
+# --- Command paths (explicit for cron) ---
+ECHO=/usr/bin/echo
 PYTHON=/usr/bin/python3
+SLEEP=/usr/bin/sleep
 
-# Ensure graphical env variables for pygame/SDL
+# Debug timestamp
+$ECHO "[launcher] started at $(date)" >> /home/bhavy/eposter/launcher.log
+
+# Short wait to let session/services settle
+$SLEEP 6
+
+# Ensure graphical env variables for pygame/SDL (important for cron)
 export DISPLAY=:0
 export XAUTHORITY="/home/bhavy/.Xauthority"
 export XDG_RUNTIME_DIR="/run/user/$(id -u)"
 export DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus"
 
-echo "[launcher] ENV: DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> /home/bhavy/eposter/launcher.log
+$ECHO "[launcher] ENV: DISPLAY=$DISPLAY XAUTHORITY=$XAUTHORITY XDG_RUNTIME_DIR=$XDG_RUNTIME_DIR" >> /home/bhavy/eposter/launcher.log
 
-
-# Get the directory where this script is located
+# Move to script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE="$SCRIPT_DIR"
 PY_SCRIPT="$BASE/show_eposters.py"
+cd "$BASE" || {
+    $ECHO "[launcher] ERROR: Cannot change to directory $BASE" >> /home/bhavy/eposter/launcher.log
+    exit 1
+}
 
-# --- Settings ---
+# --- Settings (keep these or move to a separate .env if you prefer) ---
 export WIFI_SSID="BHAVY"
 export WIFI_PSK="Bms@1266"
 export WIFI_SSID_2="BHAVY2"
@@ -35,18 +40,12 @@ export POSTER_TOKEN="A9993E364706816ABA3E25717850C26C9CD0D89D"
 export CACHE_REFRESH=60
 export DISPLAY_TIME=5
 
-$ECHO "launcher Starting ePoster viewer…"
-$ECHO "  POSTER_TOKEN: [HIDDEN]"
-$ECHO "  CACHE_REFRESH=$CACHE_REFRESH"
-$ECHO "  DISPLAY_TIME=$DISPLAY_TIME"
-$ECHO "  WIFI_SSID: ${WIFI_SSID:+[SET]}"
-$ECHO "  WIFI_SSID_2: ${WIFI_SSID_2:+[SET]}"
+$ECHO "[launcher] Starting ePoster viewer…" >> /home/bhavy/eposter/launcher.log
+$ECHO "  POSTER_TOKEN: [HIDDEN]" >> /home/bhavy/eposter/launcher.log
+$ECHO "  CACHE_REFRESH=$CACHE_REFRESH" >> /home/bhavy/eposter/launcher.log
+$ECHO "  DISPLAY_TIME=$DISPLAY_TIME" >> /home/bhavy/eposter/launcher.log
+$ECHO "  WIFI_SSID: ${WIFI_SSID:+[SET]}" >> /home/bhavy/eposter/launcher.log
+$ECHO "  WIFI_SSID_2: ${WIFI_SSID_2:+[SET]}" >> /home/bhavy/eposter/launcher.log
 
-# Change to the script directory
-cd "$BASE" || {
-    $ECHO "[launcher] ERROR: Cannot change to directory $BASE"
-    exit 1
-}
-
-# --- RUN PYTHON SCRIPT ---
-exec $PYTHON "$PY_SCRIPT"
+# Run the python script and append stdout/stderr to launcher.log
+exec "$PYTHON" "$PY_SCRIPT" >> /home/bhavy/eposter/launcher.log 2>&1
