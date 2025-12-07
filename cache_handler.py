@@ -52,17 +52,17 @@ def convert_to_landscape(img):
     Returns:
         PIL Image: Landscape-oriented image
     """
-    width, height = img.size
+    # width, height = img.size
     
     # If already landscape, return as is
-    if width > height:
-        return img
+    # if width > height:
+    #     return img
     
-    # If portrait, rotate 90 degrees counter-clockwise (expand=True keeps full image)
-    if height > width:
-        rotated = img.rotate(-90, expand=True)
-        print(f"[convert_to_landscape] Rotated from {width}x{height} to {rotated.size[0]}x{rotated.size[1]}")
-        return rotated
+    # # If portrait, rotate 90 degrees counter-clockwise (expand=True keeps full image)
+    # if height > width:
+    #     rotated = img.rotate(-90, expand=True)
+    #     print(f"[convert_to_landscape] Rotated from {width}x{height} to {rotated.size[0]}x{rotated.size[1]}")
+    #     return rotated
     
     # If square, return as is
     return img
@@ -94,7 +94,7 @@ def sync_cache(posters):
             continue
         if f.name not in expected_names:
             try:
-                f.unlink()
+                os.remove(f) 
                 print("[sync_cache] deleted old file:", f.name)
             except Exception as e:
                 print("[sync_cache] failed delete:", f.name, e)
@@ -137,16 +137,10 @@ def sync_cache(posters):
         # Always reprocess to ensure landscape (remove old file if exists)
         if dest.exists():
             try:
-                # Check if it's already landscape, if not, reprocess
-                existing_img = Image.open(dest)
-                w, h = existing_img.size
-                if w <= h:  # Not landscape, need to reprocess
-                    print(f"[sync_cache] Existing file {fname} is not landscape, reprocessing...")
-                    dest.unlink()
-                else:
+               
                     # Already landscape, just add to list
-                    cached_paths.append((poster_id, dest))
-                    continue
+                cached_paths.append((poster_id, dest))
+                continue
             except Exception as e:
                 print(f"[sync_cache] Error checking existing file {fname}: {e}, will reprocess")
                 try:
@@ -186,7 +180,7 @@ def sync_cache(posters):
                 img = img.convert('RGB')
             
             # Convert to landscape
-            img = convert_to_landscape(img)
+            # img = convert_to_landscape(img)
             final_size = img.size
             print(f"[sync_cache] Final image size: {final_size[0]}x{final_size[1]} (landscape: {final_size[0] > final_size[1]})")
             

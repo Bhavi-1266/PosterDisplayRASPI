@@ -92,31 +92,7 @@ def print_event_info(event, image_index):
 # Main
 # -------------------------
 def main():
-    # Display a "Connecting to WiFi..." or "Loading..." fullscreen message until poster display starts
-    display_loading = True
-    display_result = display_handler.init_display()
-    if display_result is not None:
-        screen, clock, scr_w, scr_h = display_result
-        display_handler.display_connecting_wifi(screen, scr_w, scr_h)  # Show "Connecting to WiFi..." screen
-    else:
-        screen = scr_w = scr_h = None
 
-    if not POSTER_TOKEN:
-        print("ERROR: POSTER_TOKEN environment variable not set.")
-        sys.exit(1)
-
-    # Step 1: Ensure WiFi connection
-    print("[main] Step 1: Ensuring WiFi connection...")
-    # display_handler.display_connecting_wifi(screen, scr_w, scr_h)
-    if not wifi_connect.ensure_wifi_connection():
-        print("[main] WiFi connection failed. Exiting.")
-        sys.exit(1)
-
-    # Step 2: Initialize API handler (creates JSON file if needed)
-    print("[main] Step 2: Initializing API handler...")
-    api_handler.ensure_api_json()
-
-    # Step 3: Initialize display
     print("[main] Step 3: Initializing display...")
     display_result = display_handler.init_display()
     if display_result is None:
@@ -125,10 +101,34 @@ def main():
     
     screen, clock, scr_w, scr_h = display_result
 
+
+    # Display a "Connecting to WiFi..." or "Loading..." fullscreen message until poster display starts
+    if not POSTER_TOKEN:
+        print("ERROR: POSTER_TOKEN environment variable not set.")
+        display_handler.show_waiting_message(screen, scr_w, scr_h, message="ERROR: POSTER_TOKEN environment variable not set.")
+        sys.exit(1)
+
+    # Step 1: Ensure WiFi connection
+    print("[main] Step 1: Ensuring WiFi connection...")
+    display_handler.show_waiting_message(screen, scr_w, scr_h, message="Connecting to WiFi...")
+    if not wifi_connect.ensure_wifi_connection():
+        print("[main] WiFi connection failed. Exiting.")
+        display_handler.show_waiting_message(screen, scr_w, scr_h, message="WiFi connection failed. Exiting.")
+        sys.exit(1)
+
+    # Step 2: Initialize API handler (creates JSON file if needed)
+    print("[main] Step 2: Initializing API handler...")
+    api_handler.ensure_api_json()
+
+    # Step 3: Initialize display
+    
     # Step 4: Load or fetch event data
     print("[main] Step 4: Loading event data...")
     event_data = load_event_data()
-    
+
+
+    #add after api is working
+    """
     # If event data doesn't exist, try to fetch it
     if event_data is None:
         print("[main] Event data not found. Attempting to fetch from API...")
@@ -144,6 +144,8 @@ def main():
             if fetch_event_data.save_event_data(fetched_data):
                 event_data = fetched_data
                 print("[main] Event data fetched and saved successfully")
+    """
+
     
     if event_data:
         print(f"[main] Loaded event data from {EVENT_DATA_JSON}")

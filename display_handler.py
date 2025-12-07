@@ -67,7 +67,9 @@ def init_display():
         screen = pygame.display.set_mode((scr_w, scr_h), pygame.FULLSCREEN)
         pygame.mouse.set_visible(False)
         clock = pygame.time.Clock()
-        
+        # Start displaying loading
+        show_waiting_message(screen, scr_w, scr_h, message="Loading...")
+        pygame.display.flip()
         return screen, clock, scr_w, scr_h
     except Exception as e:
         print(f"[display] Failed to initialize display: {e}")
