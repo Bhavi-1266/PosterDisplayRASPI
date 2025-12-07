@@ -92,12 +92,22 @@ def print_event_info(event, image_index):
 # Main
 # -------------------------
 def main():
+    # Display a "Connecting to WiFi..." or "Loading..." fullscreen message until poster display starts
+    display_loading = True
+    display_result = display_handler.init_display()
+    if display_result is not None:
+        screen, clock, scr_w, scr_h = display_result
+        display_handler.display_connecting_wifi(screen, scr_w, scr_h)  # Show "Connecting to WiFi..." screen
+    else:
+        screen = scr_w = scr_h = None
+
     if not POSTER_TOKEN:
         print("ERROR: POSTER_TOKEN environment variable not set.")
         sys.exit(1)
 
     # Step 1: Ensure WiFi connection
     print("[main] Step 1: Ensuring WiFi connection...")
+    # display_handler.display_connecting_wifi(screen, scr_w, scr_h)
     if not wifi_connect.ensure_wifi_connection():
         print("[main] WiFi connection failed. Exiting.")
         sys.exit(1)

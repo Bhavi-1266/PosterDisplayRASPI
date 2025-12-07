@@ -11,7 +11,7 @@ from PIL import Image
 import pygame
 
 
-def make_portrait_and_fit(img: Image.Image, target_w: int, target_h: int) -> Image.Image:
+def make_landscape_and_fit(img: Image.Image, target_w: int, target_h: int) -> Image.Image:
     """
     Rotates image to portrait if needed and fits it to target dimensions.
     
@@ -24,8 +24,8 @@ def make_portrait_and_fit(img: Image.Image, target_w: int, target_h: int) -> Ima
         Image: Processed image
     """
     iw, ih = img.size
-    if iw > ih:
-        img = img.rotate(90, expand=True)
+    if iw < ih:
+        img = img.rotate(-90, expand=True)
         iw, ih = img.size
     scale = min(target_w / iw, target_h / ih)
     nw = max(1, int(iw * scale))
@@ -110,7 +110,7 @@ def display_image(screen, image_path, scr_w, scr_h):
     """
     try:
         img = Image.open(image_path).convert("RGBA")
-        canvas = make_portrait_and_fit(img, scr_w, scr_h)
+        canvas = make_landscape_and_fit(img, scr_w, scr_h)
         surf = pil_to_surface(canvas)
         screen.blit(surf, (0, 0))
         pygame.display.flip()
@@ -133,4 +133,20 @@ def handle_events():
         if ev.type == pygame.KEYDOWN and ev.key in (pygame.K_ESCAPE, pygame.K_q):
             return False
     return True
+
+
+def display_connecting_wifi(screen, scr_w, scr_h):
+    """
+    Displays 'Connecting to WiFi...' message on the screen.
+    """
+    screen.fill((0, 0, 0))
+    try:
+        import pygame
+        font = pygame.font.SysFont("Arial", 36, bold=True)
+        message = "Connecting to WiFi..."
+        surf = font.render(message, True, (255, 255, 0))
+        screen.blit(surf, ((scr_w - surf.get_width()) // 2, (scr_h - surf.get_height()) // 2))
+        pygame.display.flip()
+    except Exception:
+        pygame.display.flip()
 
