@@ -91,13 +91,13 @@ def sync_cache(posters):
         return []
     
     screens = posters.get("screens", [])
-    myScreen = screens.get(DEVICE_ID, {})
+    myScreen = next((s for s in screens if s.get("screen_number") == DEVICE_ID), {})
     records = myScreen.get("records", [])
     
     
     print(f"[sync_cache] Syncing cache with {len(records)} posters (device {DEVICE_ID})")
     expected_names = expected_filenames_from_posters(records)
-
+    print(f"[sync_cache] Expected filenames: {expected_names}")
     # Delete extras (files not in expected list)
     for f in CACHE_DIR.iterdir():
         if not f.is_file():
@@ -113,7 +113,7 @@ def sync_cache(posters):
 
     # Download and process images
     cached_paths = []
-    print(f"[sync_cache] Processing {len(posters)} posters...")
+    print(f"[sync_cache] Processing {len(records)} posters...")
     for poster in records:
         if not isinstance(poster, dict):
             print(f"[sync_cache] Warning: Poster is not a dict: {type(poster)}")
