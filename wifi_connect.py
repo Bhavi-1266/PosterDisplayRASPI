@@ -12,13 +12,15 @@ import subprocess
 import requests
 
 # Configuration
-API_BASE = os.environ.get("API_BASE", "https://posterbridge.incandescentsolution.com/api/v1/eposter-list")
-WIFI_SSID = os.environ.get("WIFI_SSID")
-WIFI_PSK = os.environ.get("WIFI_PSK")
-WIFI_SSID_2 = os.environ.get("WIFI_SSID_2")  # Second WiFi network (fallback)
-WIFI_PSK_2 = os.environ.get("WIFI_PSK_2")    # Second WiFi password
-WIFI_TIMEOUT = int(os.environ.get("WIFI_CONNECT_TIMEOUT", "60"))  # seconds
+with open(Path(__file__).parent / 'config.json', 'r') as f:
+    config = json.load(f)
 
+API_BASE = config.get('api', {}).get('poster_api_url', 'https://posterbridge.incandescentsolution.com/api/v1/eposter-list')
+WIFI_SSID = config.get('wifi', {}).get('ssid1')
+WIFI_PSK = config.get('wifi', {}).get('password1')
+WIFI_SSID_2 = config.get('wifi', {}).get('ssid2')
+WIFI_PSK_2 = config.get('wifi', {}).get('password2')
+WIFI_TIMEOUT = int(config.get('wifi', {}).get('connect_timeout', 60))
 
 def is_online(check_url=API_BASE, timeout=3):
     """
