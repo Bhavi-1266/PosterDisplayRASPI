@@ -86,7 +86,7 @@ def sync_cache(posters):
         list: List of cached file paths, sorted by ID (newest first)
     """
     ensure_cache()
-    
+    print("[sync_cache] Starting cache sync..." , len(posters) if posters else 0)
     if not posters:
         return []
     
