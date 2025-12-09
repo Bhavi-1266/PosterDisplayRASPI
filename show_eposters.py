@@ -176,7 +176,7 @@ def main():
             with open("api_data.json", 'r') as f:
                 poster_data = json.load(f)
                 print("poster data", len(poster_data))
-                posters = poster_data.get("data", [])
+                posters = poster_data
 
                 if posters is None:
                     print("[main] API fetch error; will retry later.")
