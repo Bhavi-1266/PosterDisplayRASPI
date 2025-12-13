@@ -74,7 +74,7 @@ def convert_to_landscape(img):
     return img
 
 
-def sync_cache(posters):
+def sync_cache(records):
     """
     Syncs cache directory with poster data.
     Downloads images, names them by ID, and converts to landscape.
@@ -86,13 +86,13 @@ def sync_cache(posters):
         list: List of cached file paths, sorted by ID (newest first)
     """
     ensure_cache()
-    print("[sync_cache] Starting cache sync..." , len(posters) if posters else 0)
-    if not posters:
+    print("[sync_cache] Starting cache sync..." , len(records) if records else 0)
+    if not records:
         return []
     
-    screens = posters.get("screens", [])
-    myScreen = next((s for s in screens if s.get("screen_number") == DEVICE_ID), {})
-    records = myScreen.get("records", [])
+    # screens = posters.get("screens", [])
+    # myScreen = next((s for s in screens if s.get("screen_number") == DEVICE_ID), {})
+    # records = myScreen.get("records", [])
     
     
     print(f"[sync_cache] Syncing cache with {len(records)} posters (device {DEVICE_ID})")

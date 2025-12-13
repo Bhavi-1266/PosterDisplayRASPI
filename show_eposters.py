@@ -18,6 +18,7 @@ import cache_handler
 import display_handler
 import fetch_event_data
 import json
+from datetime import datetime
 
 # -------------------------
 # Configuration (via env)
@@ -28,6 +29,7 @@ with open(Path(__file__).parent / 'config.json', 'r') as f:
 POSTER_TOKEN = config.get('api', {}).get('poster_token')
 CACHE_REFRESH = int(config.get('display', {}).get('cache_refresh', 60))
 DISPLAY_TIME = int(config.get('display', {}).get('display_time', 5))
+DEVICE_ID = config.get('display', {}).get('device_id', 'default_device')
 
 SCRIPT_DIR = Path(__file__).parent
 EVENT_DATA_JSON = SCRIPT_DIR / "event_data.json"  # JSON file with event data
@@ -177,14 +179,18 @@ def main():
                 poster_data = json.load(f)
                 print("poster data", len(poster_data))
                 posters = poster_data
-
-                if posters is None:
+                screens = posters.get("screens", [])
+                myScreen = next((s for s in screens if s.get("screen_number") == DEVICE_ID), {})
+                DISPLAY_TIME = myScreen.get("minutes_per_record", DISPLAY_TIME)
+                records = myScreen.get("records", [])
+ 
+                if records is None:
                     print("[main] API fetch error; will retry later.")
                 else:
-                    print("poster len", len(posters)) 
+                    print("poster len", len(records)) 
                     # Sync cache (pass full poster data, not just URLs)
                     # Cache handler will name files by ID and convert to landscape
-                    image_paths = cache_handler.sync_cache(posters)
+                    image_paths = cache_handler.sync_cache(records)
 
                     if not image_paths:
                         print("[main] No poster images found in API.")
@@ -202,8 +208,26 @@ def main():
                 continue
 
             # Display current image
+
+            def parse_times(records):
+                fmt = "%d-%m-%Y %H:%M:%S"
+                for p in records:
+                    p["start_dt"] = datetime.strptime(p["start_date_time"], fmt)
+                    p["end_dt"] = datetime.strptime(p["end_date_time"], fmt)
+                return records
+
+            records = parse_times(records)
+            # Find current active posters
+             
             path = image_paths[idx % len(image_paths)]
             current_image_idx = idx % len(image_paths)
+            for poster in records:
+                if current_image_idx == poster.get("id") - 1:
+                    now_dt = datetime.now()
+                    break
+            if (poster.get("start_dt") <= now_dt <= poster.get("end_dt")):
+                idx += 1
+                continue 
             
             # Print event information if available
             if event_data:
@@ -215,6 +239,7 @@ def main():
                 continue
 
             # Show for DISPLAY_TIME while checking events and early-sync
+            
             start = time.time()
             while time.time() - start < DISPLAY_TIME:
                 if not display_handler.handle_events():
