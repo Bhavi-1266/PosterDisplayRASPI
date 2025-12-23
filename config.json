@@ -7,9 +7,9 @@
     "connect_timeout": 60
   },
   "api": {
-    "poster_token": "A9993E364706816ABA3E25717850C26C9CD0D89D",
-    "poster_api_url": "https://posterbridge.incandescentsolution.com/api/v1/eposter-list",
-    "event_api_url": "https://posterbridge.incandescentsolution.com/api/v1/event-data",
+    "poster_token": "***",
+    "poster_api_url": "****eposter-list",
+    "event_api_url": "***",
     "event_api_token": "",
     "request_timeout": 10
   },
