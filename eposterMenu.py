@@ -23,14 +23,12 @@ import wifi_connect
 import api_handler
 import cache_handler
 import display_handler
-import fetch_event_data
 
 # -------------------------
 # Configuration
 # -------------------------
 SCRIPT_DIR = Path(__file__).parent
 CONFIG_FILE = SCRIPT_DIR / 'config.json'
-EVENT_DATA_JSON = SCRIPT_DIR / "event_data.json"
 API_DATA_JSON = SCRIPT_DIR / "api_data.json"
 
 # Load configuration
@@ -75,34 +73,6 @@ def parse_datetime(date_str, fmt="%d-%m-%Y %H:%M:%S"):
         return datetime.strptime(date_str, fmt)
     except Exception as e:
         log(f"[parse_datetime] Failed to parse '{date_str}': {e}", "ERROR")
-        return None
-
-
-def load_event_data():
-    """
-    Load event data from JSON file.
-    
-    Returns:
-        dict: Event data or None if not found
-    """
-    func_name = "load_event_data"
-    try:
-        if not EVENT_DATA_JSON.exists():
-            log(f"[{func_name}] Event data file not found: {EVENT_DATA_JSON}", "WARNING")
-            return None
-        
-        with open(EVENT_DATA_JSON, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            
-        if isinstance(data, dict) and ("screens" in data or "status" in data):
-            log(f"[{func_name}] Successfully loaded event data", "DEBUG")
-            return data
-        
-        log(f"[{func_name}] Invalid event data format", "WARNING")
-        return None
-        
-    except Exception as e:
-        log(f"[{func_name}] Error loading event data: {e}", "ERROR")
         return None
 
 
